@@ -151,7 +151,8 @@ getTextAim = ({name, group, state})=>{
 insertSnippets = (code)=>{
 	for (let i in __snippets) {
 		if (__snippets.hasOwnProperty(i)) {
-			code = code.replace('!'+i+'!',__snippets[i])
+			let reg = new RegExp('!'+i+'!','g');
+			code = code.replace(reg, __snippets[i]);
 		}
 	}
 	return code;
