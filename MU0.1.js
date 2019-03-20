@@ -3,7 +3,8 @@ let __way = './',
 	__mode = 'def',
 	__groups = [],
 	__snippets = [],
-	__onload;
+	__onload,
+	__patterns = [];
 
 export const nodeMap = class{
 	constructor(node){
@@ -50,7 +51,7 @@ fixMode = (newMode, oldMode)=>{
 	}
 },
 //fix groups)
-fixGroups = (groups)=>{
+fixGroups = groups=>{
 	let result = [];
 	for(let key in groups){
 		if (groups[key].slice(0,2)==='./'&&groups[key].slice(-1)==='/') {
@@ -62,7 +63,7 @@ fixGroups = (groups)=>{
 	return result
 },
 //It's fixing snippets
-fixSnippets = (snippets)=>{
+fixSnippets = snippets=>{
 	let result = [];
 	if (snippets==undefined) {
 		return [];
@@ -73,6 +74,23 @@ fixSnippets = (snippets)=>{
 		}
 	}
 	return result;
+},
+//it's fixing patterns
+fixPatterns = patterns=>{
+	let result = [];
+	if (patterns==undefined) {
+		return [];
+	}
+	for (let i in patterns) {
+		if (patterns.hasOwnProperty(i)) {
+			if ((patterns[i].slice(0,2)==='./'||patterns[i].slice(0,3)==='../')&&patterns[i].slice(-3)==='.mu') {
+				result[i] = patterns[i];
+			}else{
+				log.error("wrong way on pattern " + i);
+			}
+		}
+	}
+	return result
 },
 //getting aim for inserting
 getAim = (name, group)=>{
@@ -87,7 +105,7 @@ getAim = (name, group)=>{
 	return result
 },
 //getting script
-getScript = (buffer)=>{
+getScript = buffer=>{
 	let result = document.createElement('script'),
 		block = buffer.getElementsByTagName('script')[0]||'noScript';
 	if (block == 'noScript') {
@@ -147,6 +165,20 @@ getTextAim = ({name, group, state})=>{
 	let aim = new RegExp('<mu:'+name+(group!==undefined ? '.+group.+"'+group+'"' : '')+'>(.|\n)*?</mu:'+name+'>','g');
 	return (state.match(aim)!==undefined ? state.match(aim)[0] : undefined);
 },
+//Make body extends pattern
+getExtendedComp = (data, body, status)=>{
+	if(!status){
+		return body
+	}
+	let result = body.slice(0);
+	for (let i in data) {
+		if (data.hasOwnProperty(i)) {
+			let reg = new RegExp("#"+i,"g");
+			result = result.replace(reg, data[i]);
+		}
+	}
+	return result
+},
 //For inserting snippets
 insertSnippets = (code)=>{
 	for (let i in __snippets) {
@@ -159,7 +191,10 @@ insertSnippets = (code)=>{
 },
 //Onload function
 fixOnload = txt=>{
-	if (txt == undefined||typeof(txt)!='string'||txt == '') {
+	if (txt == undefined) {
+		return txt;
+	}
+	if (typeof(txt)!='string'||txt == '') {
 		log.error("Wrong onload param");
 		return txt
 	}
@@ -237,11 +272,12 @@ export const parse = async function(params){
 		__groups = fixGroups(params.groups);
 		__snippets = fixSnippets(params.snippets);
 		__onload = fixOnload(params.onload);
+		__patterns = fixPatterns(params.patterns);
 	}
 	let muComp = [],
 		requestedComp = [];
 	new nodeMap(document.body).forEach(elem=> {
-		getMUcomponent(elem.body, elem.lvl, muComp);
+		muComp.push(getMUcomponent(elem.body, elem.lvl));
 	});
 	muComp.forEach(comp=> {
 		getFetch(comp, requestedComp, muComp.length);
@@ -341,12 +377,13 @@ function getMUcomponent(node, lvl, muComp) {
 	if(node.localName.search(/mu:/)===(-1)){
 		return
 	}
-	muComp.push({
+	return {
 		name: node.localName.slice(3),
 		nodeLvl: lvl,
 		way: (node.getAttribute('way')!==null ? node.getAttribute('way') : "noWay"),
 		group: (node.getAttribute('group')!==null ? node.getAttribute('group') : "noGroup"),
-	});
+		extends: (node.getAttribute('extends')!==null ? {name: node.getAttribute('extends'), data: node.getAttribute('MUdata')} : "noExtends"),
+	}
 }
 
 
@@ -354,12 +391,19 @@ function getMUcomponent(node, lvl, muComp) {
 //Fetch request to server with simple check 
 async function getFetch(comp, requestedComp, length) {
 	let response,
-		adress = __way + comp.name + '.mu';
-	if (comp.way!=="noWay"&&comp.group==="noGroup") {
-		adress = comp.way;
-	}
-	if (comp.group!=="noGroup") {
+		adress = __way + comp.name + '.mu',
+		status = true;
+	if (comp.extends!=="noExtends") {
+		if (__patterns[comp.extends.name]!==undefined) {
+			adress = __patterns[comp.extends.name];
+		}else{
+			log.error("Unknown group on component" + comp.name);
+			status = false;
+		}
+	}else if(comp.group!=="noGroup"){
 		adress = (__groups[comp.group]!==undefined ? __groups[comp.group] + comp.name + '.mu' : adress);
+	}else if(comp.way!=="noWay"){
+		adress = comp.way;
 	}
 	await fetch(adress)
 		.then(result=>result.ok == true ? result.text() : 'error', e=>console.error(e))
@@ -367,7 +411,7 @@ async function getFetch(comp, requestedComp, length) {
 			if (res!=='error') {
 				response = {
 					name: comp.name,
-					body: res,
+					body: comp.extends!=="noExtends" ? getExtendedComp(JSON.parse(comp.extends.data), res, status) : res,
 					lvl: comp.nodeLvl,
 				};
 				comp.group!=='noGroup' ? response.group = comp.group : '';
@@ -396,6 +440,7 @@ function textOutput({coms, state, max}){
 			aim!==undefined ? state = state.replace(aim, elem.body.outerHTML) : '';
 		});
 	}
+	state = state.replace(/<script type="module"(.|\n)*?<\/script>/g, '');
 	state = state.replace(/\n/g,'');
 	state = state.replace(/<!--.+-->/g,'');
 	state = state.replace(/>\s</g,'><');
