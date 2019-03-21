@@ -4,7 +4,8 @@ let __way = './',
 	__groups = [],
 	__snippets = [],
 	__onload,
-	__patterns = [];
+	__patterns = [],
+	__compression = "normal";
 
 export const nodeMap = class{
 	constructor(node){
@@ -202,6 +203,22 @@ fixOnload = txt=>{
 	scr.innerHTML = txt;
 	return scr;
 },
+//Fix Compression
+fixCompression = (nw, old)=>{
+	if (nw===undefined) {
+		return old
+	}
+	if(typeof(nw)!=="string"){
+		log.error("invalid compression value type");
+		return old
+	}
+	if (nw==="normal"||nw==="none") {
+		return nw
+	}else{
+		log.error("Wrong compression type "+nw);
+		return old
+	}
+},
 //Logger for MU
 log = {
 	messages: [],
@@ -273,6 +290,7 @@ export const parse = async function(params){
 		__snippets = fixSnippets(params.snippets);
 		__onload = fixOnload(params.onload);
 		__patterns = fixPatterns(params.patterns);
+		__compression = fixCompression(params.compression, __compression);
 	}
 	let muComp = [],
 		requestedComp = [];
@@ -441,9 +459,11 @@ function textOutput({coms, state, max}){
 		});
 	}
 	state = state.replace(/<script type="module"(.|\n)*?<\/script>/g, '');
-	state = state.replace(/\n/g,'');
-	state = state.replace(/<!--.+-->/g,'');
-	state = state.replace(/>\s</g,'><');
+	if (__compression=='normal') {
+		state = state.replace(/\n/g,'');
+		state = state.replace(/<!--.+-->/g,'');
+		state = state.replace(/>\s</g,'><');
+	}
 	__onload!==undefined ? state = state.replace(/<body/,'<body onload = "'+__onload.innerHTML+'"') : '';
 	log.code(state);
 }
