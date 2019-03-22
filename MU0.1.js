@@ -164,7 +164,7 @@ getScopedAll = ({block, style, name, group})=>{
 //getting TextAim for mode = get
 getTextAim = ({name, group, state})=>{
 	let aim = new RegExp('<mu:'+name+(group!==undefined ? '.+group.+"'+group+'"' : '')+'>(.|\n)*?</mu:'+name+'>','g');
-	return (state.match(aim)!==undefined ? state.match(aim)[0] : undefined);
+	return (state.match(aim)!==undefined&&state.match(aim)!==null ? state.match(aim)[0] : undefined);
 },
 //Make body extends pattern
 getExtendedComp = (data, body, status)=>{
@@ -411,11 +411,11 @@ async function getFetch(comp, requestedComp, length) {
 	let response,
 		adress = __way + comp.name + '.mu',
 		status = true;
-	if (comp.extends!=="noExtends") {
+	if (comp.extends!=="noExtends"&&comp.extends.name!=="self") {
 		if (__patterns[comp.extends.name]!==undefined) {
 			adress = __patterns[comp.extends.name];
 		}else{
-			log.error("Unknown group on component" + comp.name);
+			log.error("Unknown group on component \"" + comp.name + "\"");
 			status = false;
 		}
 	}else if(comp.group!=="noGroup"){
