@@ -163,7 +163,7 @@ getScopedAll = ({block, style, name, group})=>{
 },
 //getting TextAim for mode = get
 getTextAim = ({name, group, state})=>{
-	let aim = new RegExp('<mu:'+name+(group!==undefined ? '.+group.+"'+group+'"' : '')+'>(.|\n)*?</mu:'+name+'>','g');
+	let aim = new RegExp('<mu:'+name+(group!==undefined ? '.+group.+"'+group+'"' : '')+'.*>(.|\n)*?</mu:'+name+'>','g');
 	return (state.match(aim)!==undefined&&state.match(aim)!==null ? state.match(aim)[0] : undefined);
 },
 //Make body extends pattern
@@ -411,6 +411,7 @@ async function getFetch(comp, requestedComp, length) {
 	let response,
 		adress = __way + comp.name + '.mu',
 		status = true;
+	//Обработка адреса
 	if (comp.extends!=="noExtends"&&comp.extends.name!=="self") {
 		if (__patterns[comp.extends.name]!==undefined) {
 			adress = __patterns[comp.extends.name];
@@ -423,6 +424,7 @@ async function getFetch(comp, requestedComp, length) {
 	}else if(comp.way!=="noWay"){
 		adress = comp.way;
 	}
+	//Запрос
 	await fetch(adress)
 		.then(result=>result.ok == true ? result.text() : 'error', e=>console.error(e))
 		.then(res=>{
@@ -433,6 +435,7 @@ async function getFetch(comp, requestedComp, length) {
 					lvl: comp.nodeLvl,
 				};
 				comp.group!=='noGroup' ? response.group = comp.group : '';
+				comp.extends!=='noExtends'&&status===true ? response.extends = comp.extends : '';
 			}else{
 				response = 'error';
 			}
