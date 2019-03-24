@@ -294,6 +294,7 @@ let time = 0;*/
 
 //func for initialize parse and for preparation of MU components
 export const parse = async function(params){
+	//Если параметр строка, то делаем fetch по адресу для получения json данных и преобразуем params в объект
 	if (typeof params === 'string') {
 		if (params.slice(0,2)!=='./'||params.slice(-5)!=='.json'){
 			log.error('Wrong way to json file');
@@ -303,7 +304,7 @@ export const parse = async function(params){
 				.then(response=>response.json(), e=>console.error('there is problem: ' + e))
 				.then(res=>{params = res});
 	}
-
+	//Если params - объект, то производит фиксы основных компонентов программы
 	if (typeof params === 'object') {
 		__way = fixWay(params.way, __way);
 		__mode = fixMode(params.mode, __mode);
@@ -315,13 +316,16 @@ export const parse = async function(params){
 	}
 	let muComp = [],
 		requestedComp = [];
+	//Получаем все MU компоненты в массив muComp
 	new nodeMap(document.body).forEach(elem=> {
 		let prepComp = getMUcomponent(elem.body, elem.lvl);
 		prepComp!==undefined ? muComp.push(prepComp) : '';
 	});
+	//Делаем запрос на сервер за всеми компонентами и помещаем массив с компонентами и некоторой инфой в requestedComp
 	for (let i = 0; i < muComp.length; i++) {
 		await getFetch(muComp[i], requestedComp, muComp.length);
 	}
+	//Прередаём управление activeParse в неё отправляем запрошенные компоненты
 	activeParse(requestedComp);
 }
 
@@ -332,6 +336,7 @@ export const parse = async function(params){
 function activeParse(result) {
 	let components = [],
 		maxLvl
+	//Отсеиваем все ошибочные запросы. Верные записываем в components
 	result.forEach(i=> {
 		if (i!=='error') {
 			let nc = {};
@@ -342,15 +347,17 @@ function activeParse(result) {
 			components.push(nc);
 		}
 	});
+	//Создаём блок из строки и записываем его в свойство body
 	components.forEach(comp=> {
 		comp.body = compileObject(comp.body, comp.name, comp.group);
 	});
+	//Если мод get, то кампилируем текстовый вариант итогового body
 	if (__mode==='get') {
 		textOutput({coms: components, state: document.body.outerHTML, max: maxLvl});
 	}
-	insertInDOM(components, maxLvl);
-	__onload!==undefined ? document.body.appendChild(__onload) : '';
-	log.show();
+	insertInDOM(components, maxLvl);//Вставляем всё в body
+	__onload!==undefined ? document.body.appendChild(__onload) : '';//Если есть onload функция, то исполняет её
+	log.show();//Показывает лог
 }
 
 
