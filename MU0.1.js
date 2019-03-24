@@ -221,16 +221,21 @@ fixCompression = (nw, old)=>{
 },
 //Вствляет от
 insertSendedElements = (name, group, block)=>{
-	let aimElem = getAim(name,group).childNodes,
+	let aimElem = getAim(name,group).getElementsByTagName('send'),
 		send = block.getElementsByTagName('send')[0],
 		elems = [];
+	if (aimElem.length===0) {
+		log.error("sender is undefined in block \""+name+"\"");
+		return
+	}
+	aimElem = aimElem[0].childNodes;
 	for (let key in aimElem) {
 		if (aimElem.hasOwnProperty(key)) {
 			elems.push(aimElem[key])
 		}
 	}
 	elems.forEach(elem=> {
-		block.insertBefore(elem, send);
+		send.parentElement.insertBefore(elem, send);
 	});
 	send.remove();
 },
