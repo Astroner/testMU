@@ -318,8 +318,47 @@ export const parse = async function(params){
 		let prepComp = getMUcomponent(elem.body, elem.lvl);
 		prepComp!==undefined ? muComp.push(prepComp) : '';
 	});
-	muComp.forEach(comp=> {
-		getFetch(comp, requestedComp, muComp.length);
+
+
+
+	muComp.forEach(async function(comp){
+		let response,
+			adress = __way + comp.name + '.mu',
+			status = true;
+		//Обработка адреса
+		if (comp.extends!=="noExtends"&&comp.extends.name!=="self") {
+			if (__patterns[comp.extends.name]!==undefined) {
+				adress = __patterns[comp.extends.name];
+			}else{
+				log.error("Unknown group on component \"" + comp.name + "\"");
+				status = false;
+			}
+		}else if(comp.group!=="noGroup"){
+			adress = (__groups[comp.group]!==undefined ? __groups[comp.group] + comp.name + '.mu' : adress);
+		}else if(comp.way!=="noWay"){
+			adress = comp.way;
+		}
+		//Запрос
+		await fetch(adress)
+			.then(result=>result.ok == true ? result.text() : 'error', e=>console.error(e))
+			.then(res=>{
+				if (res!=='error') {
+					response = {
+						name: comp.name,
+						body: comp.extends!=="noExtends" ? getExtendedComp(JSON.parse(comp.extends.data), res, status) : res,
+						lvl: comp.nodeLvl,
+					};
+					comp.group!=='noGroup' ? response.group = comp.group : '';
+					comp.extends!=='noExtends'&&status===true ? response.extends = comp.extends : '';
+				}else{
+					response = 'error';
+				}
+			})
+		requestedComp.push(response);
+		if (requestedComp.length == muComp.length) {
+			activeParse(requestedComp);
+		}
+
 	});
 }
 
