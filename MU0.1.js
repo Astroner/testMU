@@ -219,6 +219,21 @@ fixCompression = (nw, old)=>{
 		return old
 	}
 },
+//Вствляет от
+insertSendedElements = (name, group, block)=>{
+	let aimElem = getAim(name,group).childNodes,
+		send = block.getElementsByTagName('send')[0],
+		elems = [];
+	for (let key in aimElem) {
+		if (aimElem.hasOwnProperty(key)) {
+			elems.push(aimElem[key])
+		}
+	}
+	elems.forEach(elem=> {
+		block.insertBefore(elem, send);
+	});
+	send.remove();
+},
 //Logger for MU
 log = {
 	messages: [],
@@ -295,7 +310,8 @@ export const parse = async function(params){
 	let muComp = [],
 		requestedComp = [];
 	new nodeMap(document.body).forEach(elem=> {
-		muComp.push(getMUcomponent(elem.body, elem.lvl));
+		let prepComp = getMUcomponent(elem.body, elem.lvl);
+		prepComp!==undefined ? muComp.push(prepComp) : '';
 	});
 	muComp.forEach(comp=> {
 		getFetch(comp, requestedComp, muComp.length);
@@ -374,6 +390,10 @@ function compileObject(component, name, group) {
 		}
 	}
 
+	if (block.getElementsByTagName('send').length!==0) {
+		insertSendedElements(name, group, block);//Если в компонент что-то посылается, то вставляем это
+	}
+
 	if (style!=='noStyle'&&style.getAttribute('scoped')!==null) {
 		[block, style] = getScopedAll({block: block, style: style, name: name, group: group});
 		style.removeAttribute('scoped');
@@ -390,7 +410,7 @@ function compileObject(component, name, group) {
 
 
 
-//Get all MU comp from document as object with 3 params : name of component, level in map and way, if it is
+//Get all MU comp from document as object with 5 params : name of component, level in map, way, if it is, group, if it is and extends if it is
 function getMUcomponent(node, lvl, muComp) {
 	if(node.localName.search(/mu:/)===(-1)){
 		return
