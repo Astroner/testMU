@@ -241,6 +241,12 @@ insertSendedElements = (name, group, block)=>{
 	});
 	send.remove();
 },
+//Всавляет в конец outerHTML(text) script.outerHTML
+insertScriptInBlock = (name, text, script)=>{
+	//ищем закрывающий блок элемента, разрезаем строку на до него и самого него, вставляем скрипт между
+	text = text.slice(0, text.lastIndexOf("</"+name+">")) + script + text.slice(text.lastIndexOf("</"+name+">"), text.length);
+	return text;
+},
 //Logger for MU
 log = {
 	messages: [],
@@ -330,6 +336,7 @@ async function parse(params){
 	//Прередаём управление activeParse в неё отправляем запрошенные компоненты
 	activeParse(requestedComp);
 }
+export default parse;
 
 
 //MAIN func that work with prepared components
@@ -347,9 +354,9 @@ function activeParse(result) {
 			components.push(nc);
 		}
 	});
-	//Создаём блок из строки и записываем его в свойство body
+	//из строки делаем DOM и блок+стили закидываем в comp.body, а скрипт закидываем в comp.script 
 	components.forEach(comp=> {
-		comp.body = compileObject(comp.body, comp.name, comp.group);
+		[comp.body, comp.script] = compileObject(comp.body, comp.name, comp.group);
 	});
 	//Если мод get, то кампилируем текстовый вариант итогового body
 	if (__mode==='get') {
@@ -359,7 +366,6 @@ function activeParse(result) {
 	__onload!==undefined ? document.body.appendChild(__onload) : '';//Если есть onload функция, то исполняет её
 	log.show();//Показывает лог
 }
-export default parse;
 
 
 
@@ -382,6 +388,13 @@ function insertInDOM(components, maxLvl) {
 			aim.remove();
 		});
 	}
+	//По порядку, т.е. как они идут в коде вставляем script блоки!
+	components.forEach(({script})=>{
+		if (script=="noScript") {
+			return
+		}
+		document.body.appendChild(script);
+	});
 }
 
 
@@ -396,7 +409,8 @@ function compileObject(component, name, group) {
 
 	let style = buffer.getElementsByTagName('style')[0]||'noStyle',
 		script = getScript(buffer),
-		block;
+		block,
+		finalScript;
 
 	for (let i = 0; i < buffer.children.length; i++) {
 		if (buffer.children[i].localName!=='style'&&buffer.children[i].localName!=='script') {
@@ -415,9 +429,9 @@ function compileObject(component, name, group) {
 	}
 
 	style!=='noStyle' ? block.appendChild(style) : '';
-	script!=='noScript'&&script.innerHTML.replace(/\n/g,'')!='' ? block.appendChild(script) : '';
+	finalScript = (script!=='noScript'&&script.innerHTML.replace(/\n/g,'')!='' ? script : 'noScript');
 	buffer.remove();
-	return block;
+	return [block, finalScript];
 }
 
 
@@ -490,7 +504,10 @@ function textOutput({coms, state, max}){
 			if (aim==undefined) {
 				return
 			}
-			aim!==undefined ? state = state.replace(aim, elem.body.outerHTML) : '';
+			let tblock = elem.body.outerHTML.slice(0);
+			//Если есть скрипт блок, то вставляем его
+			tblock = (elem.script!=="noScript" ? insertScriptInBlock(elem.body.localName, tblock, elem.script.outerHTML) : tblock);
+			aim!==undefined ? state = state.replace(aim, tblock) : '';
 		});
 	}
 	state = state.replace(/<script type="module"(.|\n)*?<\/script>/g, '');
