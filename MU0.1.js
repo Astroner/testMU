@@ -7,6 +7,7 @@ let __way = './',
 	__patterns = [],
 	__compression = "normal";
 
+//it returns full leveled map of dom element
 export const nodeMap = class{
 	constructor(node){
 		this.finale = [];
@@ -31,6 +32,7 @@ export const nodeMap = class{
 	}
 }
 
+//support functions
 const 
 // check of new way
 fixWay = (newWay, oldWay)=>{
@@ -181,7 +183,7 @@ getExtendedComp = (data, body, status)=>{
 	return result
 },
 //For inserting snippets
-insertSnippets = (code)=>{
+insertSnippets = code=>{
 	for (let i in __snippets) {
 		if (__snippets.hasOwnProperty(i)) {
 			let reg = new RegExp('!'+i+'!','g');
@@ -293,7 +295,7 @@ log = {
 let time = 0;*/
 
 //func for initialize parse and for preparation of MU components
-export const parse = async function(params){
+async function parse(params){
 	//Если параметр строка, то делаем fetch по адресу для получения json данных и преобразуем params в объект
 	if (typeof params === 'string') {
 		if (params.slice(0,2)!=='./'||params.slice(-5)!=='.json'){
@@ -330,8 +332,6 @@ export const parse = async function(params){
 }
 
 
-
-
 //MAIN func that work with prepared components
 function activeParse(result) {
 	let components = [],
@@ -359,6 +359,7 @@ function activeParse(result) {
 	__onload!==undefined ? document.body.appendChild(__onload) : '';//Если есть onload функция, то исполняет её
 	log.show();//Показывает лог
 }
+export default parse;
 
 
 
@@ -421,9 +422,6 @@ function compileObject(component, name, group) {
 
 
 
-
-
-
 //Get all MU comp from document as object with 5 params : name of component, level in map, way, if it is, group, if it is and extends if it is
 function getMUcomponent(node, lvl, muComp) {
 	if(node.localName.search(/mu:/)===(-1)){
@@ -476,6 +474,9 @@ async function getFetch(comp, requestedComp, length) {
 		})
 	requestedComp.push(response);
 }
+
+
+//create text output
 function textOutput({coms, state, max}){
 	for (let i = 1; i <=max; i++) {//step by step it goes every level
 		let curLvl = [];	  
