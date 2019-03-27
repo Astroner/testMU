@@ -221,22 +221,24 @@ fixCompression = (nw, old)=>{
 		return old
 	}
 },
-//Вствляет от
+//Вствляет отправленный send
 insertSendedElements = (name, group, block)=>{
-	let aimElem = getAim(name,group).getElementsByTagName('send'),
-		send = block.getElementsByTagName('send')[0],
-		elems = [];
-	if (aimElem.length===0) {
+	let aimElem = getAim(name,group).getElementsByTagName('send'),//Получаю send из марки
+		send = block.getElementsByTagName('send')[0],//получаю send из компонента
+		buffer = document.createElement('div'),//создаю буфер для копирования
+		elems = [];//массив с ссылками на DOM
+	if (aimElem.length===0) {//Если не находит send в марке, то ошибка
 		log.error("sender is undefined in block \""+name+"\"");
 		return
 	}
-	aimElem = aimElem[0].childNodes;
-	for (let key in aimElem) {
-		if (aimElem.hasOwnProperty(key)) {
-			elems.push(aimElem[key])
+	aimElem = aimElem[0];//если находит, то берём за корректный буфер - первый
+	buffer.innerHTML = aimElem.innerHTML;//Копируем всё в буфер
+	for (let key in buffer.childNodes) {//Бурём ссылки на элементы в массив
+		if (buffer.childNodes.hasOwnProperty(key)) {
+			elems.push(buffer.childNodes[key])
 		}
 	}
-	elems.forEach(elem=> {
+	elems.forEach(elem=> {//Переносим всё из буфера в сам блок
 		send.parentElement.insertBefore(elem, send);
 	});
 	send.remove();
@@ -418,7 +420,6 @@ function compileObject(component, name, group) {
 			i = buffer.children.length;
 		}
 	}
-
 	if (block.getElementsByTagName('send').length!==0) {
 		insertSendedElements(name, group, block);//Если в компонент что-то посылается, то вставляем это
 	}
