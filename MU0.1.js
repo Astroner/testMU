@@ -163,11 +163,6 @@ getScopedAll = ({block, style, name, group})=>{
 	style.innerHTML = newStyle;
 	return [block, style]
 },
-//getting TextAim for mode = get
-getTextAim = ({name, group, state})=>{
-	let aim = new RegExp('<mu:'+name+(group!==undefined ? '.+group.+"'+group+'"' : '')+'.*>(.|\n)*?</mu:'+name+'>','g');
-	return (state.match(aim)!==undefined&&state.match(aim)!==null ? state.match(aim)[0] : undefined);
-},
 //Make body extends pattern
 getExtendedComp = (data, body, status)=>{
 	if(!status){
@@ -501,7 +496,7 @@ function textOutput({coms, state, max}){
 			}
 		});
 		curLvl.forEach(elem=> {//inserting
-			let aim = new RegExp(getTextAim({name: elem.name, group: elem.group, state: state}));//getting aim
+			let aim = getAim(elem.name, elem.group).outerHTML;//getting aim
 			if (aim==undefined) {
 				return
 			}
