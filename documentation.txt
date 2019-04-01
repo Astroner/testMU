@@ -55,17 +55,21 @@
 
 Добавил support библиотеку MU0.1support.js и её минифицированную копию.
 В ней пока только функция для суппортив вещей, которые нужны в процессе функционирования сайта.
-Функция asyncComponent() принимает 3 параметра way, data и success. 
+Функция asyncComponent() принимает 4 параметра way, data, send и success. 
 way - путь у компоненту,
 data - аналог MUdata. data это объект с данными, которые передаются.
 success - функция, которая сработает, когда закончится компиляция компонента, который будет в неё передан.
+send - массив узлов, которые будут вставленны на место send в компоненте.
 ПРИМЕР:
+let tes = document.createElement("div");
+tes.innerHTML = "i'm sended!"
 asyncComponent({
-	way:"./components/slider/slider.mu",
+	way:"./components/test.mu",
 	data:{
-		prefix:"asdasd",
-		mainCSS:"position:relative;margin: 0 auto;width: 80vw;height: 300px; background: linear-gradient(0deg, #D4145A, #FBB03B)"
+		1:"i'm first",
+		2:"i'm second"
 	},
+	send:[tes],
 	success: function (body) {
 		document.body.appendChild(body);
 	}
