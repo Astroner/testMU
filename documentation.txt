@@ -102,3 +102,4 @@ asyncComponent({
 		Теперь я заменил {data}
 	</case:second1>
 </var:2> 
+Добавил ту же фичу в asyncComponent
