@@ -1,4 +1,4 @@
-'use strict';
+;'use strict';
 let __way = './',
 	__mode = 'def',
 	__groups = [],
@@ -165,17 +165,46 @@ getScopedAll = ({block, style, name, group})=>{
 },
 //Make body extends pattern
 getExtendedComp = (data, body, status)=>{
-	if(!status){
+	if(!status){//Если статус false, то просто возвращаем body
 		return body
 	}
-	let result = body.slice(0);
-	for (let i in data) {
-		if (data.hasOwnProperty(i)) {
-			let reg = new RegExp("#"+i,"g");
-			result = result.replace(reg, data[i]);
+	if (body.search(">>logic")==-1) {//Если не находится часть >>logic, то просто всё заменяем
+		let result = body.slice(0);
+		for (let i in data) {
+			if (data.hasOwnProperty(i)) {
+				let reg = new RegExp("#"+i,"g");
+				result = result.replace(reg, data[i]);
+			}
 		}
+		return result
+	}else{//Если logic есть
+		let logic,//часть с логикой
+			buffer;//часть с body
+		[body, logic] = body.split(">>logic");//Сплитим всё по >>logic
+		buffer = document.createElement('div');//Создаём buffer
+		buffer.innerHTML = logic;//Вставляем в него logic
+		for (let i in data) {//Проходимся по всей data
+			if (data.hasOwnProperty(i)) {
+				let reg = new RegExp("#"+i,"g");//рег для финальной замены
+				if (buffer.getElementsByTagName('var:'+i).length>0&&buffer.getElementsByTagName('var:'+i)[0].getElementsByTagName('case:'+data[i]).length>0) {
+					//Если существует блок логики для данного ключа и для данного конкретного кейса, то
+					//resultier - текст для кейса.
+					let resulier = buffer.getElementsByTagName('var:'+i)[0].getElementsByTagName('case:'+data[i])[0].innerHTML,
+						reg1 = new RegExp("\{data\}","g");//рег для замены в resulier конструкции {data} на значение ключа
+					resulier = resulier.replace(reg1, data[i]);//Заменяем {data} на значение ключа
+					body = body.replace(reg, resulier);//Финальная замена
+				}else if (buffer.getElementsByTagName('var:'+i).length>0&&buffer.getElementsByTagName('var:'+i)[0].getElementsByTagName("default").length>0) {
+					let def = buffer.getElementsByTagName('var:'+i)[0].getElementsByTagName("default")[0].innerHTML,
+						reg1 = new RegExp("\{data\}","g");//рег для замены в def конструкции {data} на значение ключа
+					def = def.replace(reg1, data[i]);//Заменяем {data} на значение ключа
+					body = body.replace(reg, def);//Финальная замена
+				}else{//Если отсутствует блок логики или кейс или default, то просто делаем замену
+					body = body.replace(reg, data[i]);
+				}
+			}
+		}
+		return body;//Финально возвращаем body
 	}
-	return result
 },
 //For inserting snippets
 insertSnippets = code=>{
