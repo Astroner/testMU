@@ -1,5 +1,7 @@
 ;(function(){
 //Запечатал всё в модуль.
+var loadedComponents = [],//Массив с загруженными компонентами
+	loadedComponentList = [];//Массив с именами загруженных компонентов
 function asyncComponent (params){//Функция для асинхронного получения компонента по пути.
 	var way = params.way,//путь
 		data = params.data,//ДАта, переданная как объект
@@ -83,8 +85,141 @@ function insertData(data, res) {
 		return body
 	}
 }
+//Загрузить компонент и поместить в loadedComponents
+function loadComp(params) {
+	var name = params.name,//Имя компонента
+		way = params.way,//Путь до компонента
+		success = params.success,//Callback в случае успеха
+		req = new XMLHttpRequest();//ajax<3
+	if (!name) {//Если не создано имя то возврат
+		console.error("Name is not defined");
+		return
+	}
+	if (!way) {//То же для пути
+		console.error("Way is not defined");
+		return
+	}
+	req.onload = function(){//Что делать при успешной загрузке
+		var res = this.responseText,//Результат
+			body,//тело
+			logic,//логика
+			buffer = document.createElement('div');//буфер
+		if (loadedComponentList.indexOf(name)!==-1) {//Проверяем, есть ли компонент с подобным именем
+			console.error("The component named \"" + name + "\" is already loaded!");
+			return
+		}
+		loadedComponentList.push(name);//Добавляем name в массив загруженных компонентов
+		if (res.search(">>logic")>=0) {//если еть модули логики
+			body = res.split(">>logic")[0];//тело
+			logic = res.split(">>logic")[1];//логика
+			var log = {};//объект для записи логики
+			buffer.innerHTML = logic;//Всавляем логику в буфер
+			for (var key in buffer.children) {//перебираем все элементы
+				if (buffer.children.hasOwnProperty(key)) {
+					log[buffer.children[key].localName.slice(4)] = {};//создаём свойство для данной var
+					var ches = buffer.children[key].children;//все case'ы
+					for (var kes in ches) {//Перебираем все case'ы и default
+						if (ches.hasOwnProperty(kes)) {
+							var locName = ches[kes].localName;//Локальное имя
+							if (locName!=="default") {//если не равно default
+								locName = locName.slice(5);//То срезаем case:
+							}
+							//Создаём свойство curent case'a в данной var с текстом 
+							log[buffer.children[key].localName.slice(4)][locName] = ches[kes].innerHTML;
+						}
+					}
+				}
+			}
+			//Закидываем в массив по имени body - тело компонента(string) и logic - логику(объект)
+			loadedComponents[name] = {
+				body:body,
+				logic: log
+			};
+		}else{
+			//Если логики нет, то просто закидываем res
+			loadedComponents[name] = {
+				body: res
+			}
+		}
+		//Выполняем callback
+		if (success!==undefined) {
+			success(res);
+		}
+	}
+	//метод и путь
+	req.open("post",way);
+	//отправка
+	req.send();
+}
+//Возвращает скомпилированный компонент, загруженный с помощью loadComp()
+function loadedComp(params) {
+	var name = params.name,//Имя компонента
+		data = params.data,//переданная data
+		send = params.send,//массив send
+		buffer = document.createElement('div'),//буфер
+		body, logic, style, block, oldScr, script;
+	if(!loadedComponents[name]){//Проверка на наличие загруженного компонента
+		console.error("Component "+name+" is not loaded");
+		return document.createElement('div');
+	}
+	body = loadedComponents[name].body.slice(0);
+	logic = loadedComponents[name].logic;
+	if (data) {
+		for (var key in data) {
+		if (data.hasOwnProperty(key)) {
+			if (!logic) {
+				body = body.replace(new RegExp("#"+key,"g"), data[key])
+			}else{
+				if (logic[key]&&logic[key][data[key]]) {
+					var res = logic[key][data[key]].slice(0);
+					res = res.replace(new RegExp("{data}","g"), data[key]);
+					body = body.replace(new RegExp("#"+key,"g"), res);
+				}else if(logic[key]&&logic[key]["default"]){
+					var res = logic[key]["default"].slice(0);
+					res = res.replace(new RegExp("{data}","g"), data[key]);
+					body = body.replace(new RegExp("#"+key,"g"), res);
+				}else{
+					body = body.replace(new RegExp("#"+key,"g"), data[key]);
+				}
+			}
+		}
+		}
+	}
+	buffer.innerHTML = body;
+	block = buffer.querySelector(':not(style):not(script)');
+	oldScr = buffer.querySelector('script');
+	style = buffer.querySelector('style');
+	if (oldScr) {
+		script = document.createElement('script');
+		script.innerHTML = oldScr.innerHTML;
+	}
+	if (block.getElementsByTagName('send').length>0) {
+		var aim = block.getElementsByTagName('send')[0];
+		if (send) {
+			send.forEach(function(elem) {
+				aim.parentElement.insertBefore(elem, aim);
+			});
+		}
+		aim.remove();
+	}
+	if (script) {
+		block.appendChild(script);
+	}
+	if (style) {
+		block.appendChild(style);
+	}
+	return block;
+}
+//Возвращает массив с именами загруженных компонентов
+function getList() {
+	return loadedComponentList.slice(0);
+}
 //API модуля
 	window.msup = {
-		asyncComponent:asyncComponent
+		//Загрузить компонент асинхронно и выполнить callback, в который аргументом скомпилированный компонент
+		asyncComp:asyncComponent,
+		loadComp:loadComp,//Загрузить компонент для будущего использования
+		loadedComp:loadedComp,//Возвращает скомпилированный компонент, загруженный с помощью loadComp()
+		getList: getList//Возвращает массив с именами загруженных компонентов
 	}
 }());

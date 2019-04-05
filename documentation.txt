@@ -102,4 +102,32 @@ asyncComponent({
 		Теперь я заменил {data}
 	</case:second1>
 </var:2> 
-Добавил ту же фичу в asyncComponent
+Добавил ту же фичу в asyncComponent. Теперья для обращения к suppot функциям необходимо обращаться к msup, например musp.asyncComponent( {} )
+К support добавил функции loadComp, getList и loadedComp. Также переименовал asyncComponent в asyncComp
+loadComp() Принимает объект со свойствами name и way.
+name - имя компонента, по которому в будущем будет доступен сам компонент
+way - путь для загрузки компонента.
+ПРИМЕР:
+msup.loadComp({
+	name:"test",
+	way:"./components/test.mu"
+});
+
+getList() - Не принимает параметров, возвращает список имён загруженных компонентов
+ПРИМЕР:
+console.log(msup.getList())//["test"]
+
+loadedComp() - возвращает Скомпилированный компонент. 
+Принимает:
+name - имя компонента,
+data - data, которую необходимо вставить
+send - массив элементов, который будет вставлен вместо блока send
+ПРИМЕР:
+let comp = msup.loadedComp({
+	name:"test",
+	data:{
+		1:"2",
+		2:"1"
+	},
+	send:[tes],
+})
