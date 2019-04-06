@@ -1,11 +1,12 @@
 ;'use strict';
-let __way = './',
-	__mode = 'def',
-	__groups = [],
-	__snippets = [],
-	__onload,
-	__patterns = [],
-	__compression = "normal";
+let __way = './',//def way
+	__mode = 'def',//def mode
+	__groups = [],//groups
+	__snippets = [],//snippets
+	__onload,//onload fun
+	__patterns = [],//patterns
+	__compression = "normal",//compression mode
+	__allStyle = document.createElement('style');//this is the block with all styles
 
 //it returns full leveled map of dom element
 export const nodeMap = class{
@@ -421,6 +422,8 @@ function insertInDOM(components, maxLvl) {
 		}
 		document.body.appendChild(script);
 	});
+	//Вставляем стили
+	document.body.appendChild(__allStyle);
 }
 
 
@@ -438,12 +441,8 @@ function compileObject(component, name, group) {
 		block,
 		finalScript;
 
-	for (let i = 0; i < buffer.children.length; i++) {
-		if (buffer.children[i].localName!=='style'&&buffer.children[i].localName!=='script') {
-			block = buffer.children[i];
-			i = buffer.children.length;
-		}
-	}
+	block = buffer.querySelector(':not(style):not(script)');
+
 	if (block.getElementsByTagName('send').length!==0) {
 		insertSendedElements(name, group, block);//Если в компонент что-то посылается, то вставляем это
 	}
@@ -453,7 +452,7 @@ function compileObject(component, name, group) {
 		style.removeAttribute('scoped');
 	}
 
-	style!=='noStyle' ? block.appendChild(style) : '';
+	style!=='noStyle' ? __allStyle.innerHTML+=style.innerHTML : '';
 	finalScript = (script!=='noScript'&&script.innerHTML.replace(/\n/g,'')!='' ? script : 'noScript');
 	buffer.remove();
 	return [block, finalScript];
@@ -542,5 +541,7 @@ function textOutput({coms, state, max}){
 		state = state.replace(/>\s</g,'><');
 	}
 	__onload!==undefined ? state = state.replace(/<body/,'<body onload = "'+__onload.innerHTML+'"') : '';
+	//Вставляем стили в конце всего.
+	state = state.replace("</body>", __allStyle.outerHTML+"</body>");
 	log.code(state);
 }
