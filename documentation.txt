@@ -131,3 +131,12 @@ let comp = msup.loadedComp({
 	},
 	send:[tes],
 })
+
+Добавил функцию msup.subscribe(callback); Выполняет callback при загрузке нового компонента через loadComp.
+В callback передаётся имя загруженного компонента и копия массива загруженных компонентов сразу после загрузки.
+ПРИМЕР:
+msup.subscribe(function (name, state) {
+	if (state.length==2) {
+		console.log(name);
+	}
+});

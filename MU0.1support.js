@@ -1,7 +1,29 @@
 ;(function(){
 //Запечатал всё в модуль.
 var loadedComponents = [],//Массив с загруженными компонентами
-	loadedComponentList = [];//Массив с именами загруженных компонентов
+	//объект с именами загруженных компонентов
+	loadedComponentList = {
+		state: [],//Непосредственно элементы
+		subscribers: [],//Массив с подписками
+		//Функция для добавления элементов
+		add: function (name) {
+			var self = this;
+			this.state.push(name);
+			this.subscribers.forEach(function(elem) {
+				elem(name, self.getState())
+			});
+		},
+		//Получить state
+		getState: function () {
+			return this.state.slice(0);
+		},
+		//Метод для подписки
+		subscribe: function (callback) {
+			if (typeof(callback)==="function") {
+				this.subscribers.push(callback)
+			}
+		},
+	}
 function asyncComponent (params){//Функция для асинхронного получения компонента по пути.
 	var way = params.way,//путь
 		data = params.data,//ДАта, переданная как объект
@@ -104,11 +126,10 @@ function loadComp(params) {
 			body,//тело
 			logic,//логика
 			buffer = document.createElement('div');//буфер
-		if (loadedComponentList.indexOf(name)!==-1) {//Проверяем, есть ли компонент с подобным именем
+		if (loadedComponentList.state.indexOf(name)!==-1) {//Проверяем, есть ли компонент с подобным именем
 			console.error("The component named \"" + name + "\" is already loaded!");
 			return
 		}
-		loadedComponentList.push(name);//Добавляем name в массив загруженных компонентов
 		if (res.search(">>logic")>=0) {//если еть модули логики
 			body = res.split(">>logic")[0];//тело
 			logic = res.split(">>logic")[1];//логика
@@ -141,6 +162,7 @@ function loadComp(params) {
 				body: res
 			}
 		}
+		loadedComponentList.add(name);//Добавляем name в массив загруженных компонентов
 		//Выполняем callback
 		if (success!==undefined) {
 			success(res);
@@ -200,7 +222,11 @@ function loadedComp(params) {
 				aim.parentElement.insertBefore(elem, aim);
 			});
 		}
-		aim.remove();
+		try{
+			aim.remove()
+		}catch(e){
+			delete aim
+		}
 	}
 	if (script) {
 		block.appendChild(script);
@@ -210,9 +236,14 @@ function loadedComp(params) {
 	}
 	return block;
 }
-//Возвращает массив с именами загруженных компонентов
+
+//Порт для loadedComponentList.subscribe
+function subs(callback) {
+	loadedComponentList.subscribe(callback);
+}
+//Порт для loadedComponentList.getState
 function getList() {
-	return loadedComponentList.slice(0);
+	return loadedComponentList.getState();
 }
 //API модуля
 	window.msup = {
@@ -220,6 +251,7 @@ function getList() {
 		asyncComp:asyncComponent,
 		loadComp:loadComp,//Загрузить компонент для будущего использования
 		loadedComp:loadedComp,//Возвращает скомпилированный компонент, загруженный с помощью loadComp()
-		getList: getList//Возвращает массив с именами загруженных компонентов
+		getList: getList,//Возвращает массив с именами загруженных компонентов
+		subscribe: subs//Подписаться на изменения листа компонентов
 	}
 }());
