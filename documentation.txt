@@ -140,3 +140,14 @@ msup.subscribe(function (name, state) {
 		console.log(name);
 	}
 });
+
+Теперь в функцию msup.loadComp() можно передать несколько объектов для загрузки.
+ПРЕМЕР:
+msup.loadComp({
+	name:"dom",
+	way:"components/test.mu"
+},
+{
+	name:"scr",
+	way:"components/script.mu"
+});

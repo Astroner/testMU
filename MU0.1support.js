@@ -245,11 +245,17 @@ function subs(callback) {
 function getList() {
 	return loadedComponentList.getState();
 }
+//Порт, чтобы загружать несколько компонентов за раз
+function loadCompPort() {
+	for (var i = 0; i < arguments.length; i++) {
+		loadComp(arguments[i]);
+	}
+}
 //API модуля
 	window.msup = {
 		//Загрузить компонент асинхронно и выполнить callback, в который аргументом скомпилированный компонент
 		asyncComp:asyncComponent,
-		loadComp:loadComp,//Загрузить компонент для будущего использования
+		loadComp:loadCompPort,//Загрузить компонент(ы) для будущего использования
 		loadedComp:loadedComp,//Возвращает скомпилированный компонент, загруженный с помощью loadComp()
 		getList: getList,//Возвращает массив с именами загруженных компонентов
 		subscribe: subs//Подписаться на изменения листа компонентов
