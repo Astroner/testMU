@@ -236,46 +236,6 @@ function loadedComp(params) {
 	}
 	return block;
 }
-function createComp(prop) {
-	var block = prop.block,
-		style = prop.style,
-		script = prop.script;
-	if (block.tag===undefined) {
-		console.error("tag should be defined!");
-		return
-	}
-	var Block = document.createElement(block.tag);
-	if (block.id!=undefined) {
-		Block.id = block.id;
-	}
-	if (block.class!=undefined) {
-		block.class.forEach(function(elem) {
-			Block.classList.add(elem)
-		});
-	}
-	if (block.handlers) {
-		for (var key in block.handlers) {
-			if (block.handlers.hasOwnProperty(key)) {
-				Block["on"+key] = block.handlers[key];
-			}
-		}
-	}
-	if (block.childNodes) {
-		block.childNodes.forEach(function(elem) {
-			if (typeof(elem)=="string") {
-				Block.innerHTML+=elem;
-			}
-		});
-	}
-	if (style) {
-		var Style = document.createElement("style");
-		style.forEach(function(elem) {
-			Style.innerHTML+=elem.sel+"{"+"background:"+elem.rules.background+"}";
-		});
-		Block.appendChild(Style)
-	}
-	return Block;
-}
 //Порт для loadedComponentList.subscribe
 function subs(callback) {
 	loadedComponentList.subscribe(callback);
@@ -298,6 +258,5 @@ function loadCompPort() {
 		loadedComp:loadedComp,//Возвращает скомпилированный компонент, загруженный с помощью loadComp()
 		getList: getList,//Возвращает массив с именами загруженных компонентов
 		subscribe: subs,//Подписаться на изменения листа компонентов
-		createComp:createComp
 	}
 }());
